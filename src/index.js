@@ -27,9 +27,10 @@ initDatabase().catch((err) => {
 app.use('/api/applications', applicationRoutes);
 
 const options = {
-  key: fs.readFileSync('./ssl/api.phoenixclub.ro.key'),
+  key: fs.readFileSync('./ssl/api.phoenixclub.ro-pkcs8.key'),
   cert: fs.readFileSync('./ssl/api.phoenixclub.ro.crt'),
-  secureProtocol: 'TLSv1_2_method' // Enforce TLS 1.2
+  secureProtocol: 'TLSv1_2_method',
+  minVersion: 'TLSv1.2'
 };
 
 https.createServer(options, app).listen(3000, () => {
