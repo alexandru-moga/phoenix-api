@@ -1,7 +1,6 @@
 const mariadb = require('mariadb');
 require('dotenv').config();
 
-// Create a connection pool
 const pool = mariadb.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -11,14 +10,13 @@ const pool = mariadb.createPool({
   connectionLimit: 5
 });
 
-// Test and initialize database
 async function initDatabase() {
   let conn;
   try {
     conn = await pool.getConnection();
     console.log('Database connected successfully');
-    
-    // Create applications table if it doesn't exist
+
+    // Create applications table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id INT NOT NULL AUTO_INCREMENT,
@@ -34,7 +32,21 @@ async function initDatabase() {
         PRIMARY KEY (id)
       )
     `);
-    console.log('Applications table verified/created');
+    console.log('Applications table created/verified');
+
+    // Create contact_submissions table
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS contact_submissions (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+      )
+    `);
+    console.log('Contact submissions table created/verified');
+
   } catch (err) {
     console.error('Database initialization failed:', err);
     throw err;
