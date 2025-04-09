@@ -29,8 +29,6 @@ async function initDatabase() {
         class VARCHAR(20) NOT NULL,
         birthdate DATE NOT NULL,
         phone VARCHAR(20) NOT NULL,
-        discord_username VARCHAR(100) NOT NULL,
-        student_id VARCHAR(100) NOT NULL,
         superpowers TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)

@@ -14,7 +14,7 @@ class Application {
       const result = await conn.query(
         `INSERT INTO applications (
           email, first_name, last_name, school, class, 
-          birthdate, phone, discord_username, student_id, superpowers
+          birthdate, phone, superpowers
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           application.email,
@@ -24,8 +24,6 @@ class Application {
           application.class,
           application.birthdate,
           application.phone,
-          application.discord_username,
-          application.student_id,
           application.superpowers
         ]
       );

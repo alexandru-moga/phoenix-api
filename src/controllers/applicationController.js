@@ -15,8 +15,7 @@ const applicationController = {
       // Validate required fields
       const requiredFields = [
         'email', 'first_name', 'last_name', 'school', 
-        'class', 'birthdate', 'phone', 'discord_username',
-        'student_id', 'superpowers'
+        'class', 'birthdate', 'phone', 'superpowers'
       ];
       
       const missingFields = requiredFields.filter(field => !req.body[field]);
@@ -37,8 +36,6 @@ const applicationController = {
         class: req.body.class,
         birthdate: req.body.birthdate,
         phone: req.body.phone,
-        discord_username: req.body.discord_username,
-        student_id: req.body.student_id,
         superpowers: req.body.superpowers
       };
 
