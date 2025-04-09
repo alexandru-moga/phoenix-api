@@ -16,7 +16,6 @@ async function initDatabase() {
     conn = await pool.getConnection();
     console.log('Database connected successfully');
 
-    // Create applications table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id INT NOT NULL AUTO_INCREMENT,
@@ -34,7 +33,6 @@ async function initDatabase() {
     `);
     console.log('Applications table created/verified');
 
-    // Create contact_submissions table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS contact_submissions (
         id INT NOT NULL AUTO_INCREMENT,

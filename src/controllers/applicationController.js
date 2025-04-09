@@ -4,7 +4,6 @@ const { sendApplicationToDiscord } = require('../utils/discord');
 const applicationController = {
   async submitApplication(req, res) {
     try {
-      // Validate request body exists
       if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({
           success: false,
@@ -12,7 +11,6 @@ const applicationController = {
         });
       }
 
-      // Validate required fields
       const requiredFields = [
         'email', 'first_name', 'last_name', 'school', 
         'class', 'birthdate', 'phone', 'superpowers'
@@ -27,7 +25,6 @@ const applicationController = {
         });
       }
 
-      // Create application object
       const applicationData = {
         email: req.body.email,
         first_name: req.body.first_name,
@@ -39,10 +36,8 @@ const applicationController = {
         superpowers: req.body.superpowers
       };
 
-      // Save to database
       const savedApplication = await Application.create(applicationData);
       
-      // Send to Discord
       await sendApplicationToDiscord(applicationData);
 
       return res.status(201).json({

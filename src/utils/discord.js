@@ -1,9 +1,7 @@
 const axios = require('axios');
 require('dotenv').config();
 
-/**
- * Sends application data to Discord via webhook
- */
+
 async function sendApplicationToDiscord(application) {
   const {
     email,
@@ -18,10 +16,9 @@ async function sendApplicationToDiscord(application) {
     superpowers
   } = application;
 
-  // Format the message for Discord
   const embed = {
     title: "📝 New Phoenix Club Application",
-    color: 0xec3750, // Phoenix Club red from CSS
+    color: 0xec3750,
     fields: [
       { name: "Name", value: `${first_name} ${last_name}`, inline: true },
       { name: "Email", value: email, inline: true },
@@ -77,4 +74,7 @@ async function sendContactToDiscord(contact) {
   }
 }
 
-module.exports = { sendApplicationToDiscord };
+module.exports = {
+  sendApplicationToDiscord,
+  sendContactToDiscord
+};
