@@ -4,6 +4,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const contactRoutes = require('./routes/contactRoutes');
+app.use('/api/contact', contactRoutes);
+
 const applicationRoutes = require('./routes/applicationRoutes');
 const { initDatabase } = require('./config/db');
 

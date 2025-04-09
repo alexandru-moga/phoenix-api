@@ -52,4 +52,29 @@ async function sendApplicationToDiscord(application) {
   }
 }
 
+async function sendContactToDiscord(contact) {
+  const embed = {
+    title: "📨 New Contact Message",
+    color: 0x33d6a6,
+    fields: [
+      { name: "Name", value: contact.name, inline: true },
+      { name: "Email", value: contact.email, inline: true },
+      { name: "Message", value: contact.message }
+    ],
+    timestamp: new Date().toISOString(),
+    footer: { text: "Phoenix Club Contact System" }
+  };
+
+  const payload = {
+    username: "Contact Form Submissions",
+    embeds: [embed]
+  };
+
+  try {
+    await axios.post(process.env.DISCORD_CONTACT_WEBHOOK, payload);
+  } catch (error) {
+    console.error('Error sending contact to Discord:', error);
+  }
+}
+
 module.exports = { sendApplicationToDiscord };
