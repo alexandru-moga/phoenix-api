@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 // CORS Configuration
 const corsOptions = {
   origin: [
-    'https://phoenixclub.ro',
+    'http://127.0.0.:5000',
     '90.95.76.115'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],

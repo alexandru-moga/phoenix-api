@@ -25,10 +25,8 @@ async function sendApplicationToDiscord(application) {
     fields: [
       { name: "Name", value: `${first_name} ${last_name}`, inline: true },
       { name: "Email", value: email, inline: true },
-      { name: "Discord", value: discord_username, inline: true },
       { name: "School", value: school, inline: true },
       { name: "Class", value: classYear, inline: true },
-      { name: "Student ID", value: student_id, inline: true },
       { name: "Phone", value: phone, inline: true },
       { name: "Date of Birth", value: birthdate, inline: true },
       { name: "About & Superpowers", value: superpowers }
