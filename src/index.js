@@ -29,8 +29,8 @@ app.use('/api/applications', applicationRoutes);
 const options = {
   key: fs.readFileSync('./src/ssl/api.phoenixclub.ro-pkcs8.key'),
   cert: fs.readFileSync('./src/ssl/api.phoenixclub.ro.crt'),
-  secureProtocol: 'TLSv1_2_method',
-  minVersion: 'TLSv1.2'
+  minVersion: 'TLSv1.2',
+  maxVersion: 'TLSv1.3',
 };
 
 https.createServer(options, app).listen(3000, () => {
