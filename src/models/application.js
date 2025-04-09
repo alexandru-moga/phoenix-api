@@ -1,12 +1,7 @@
 const { pool } = require('../config/db');
 
-/**
- * Application model for database operations
- */
 class Application {
-  /**
-   * Save application to database
-   */
+
   static async create(application) {
     let conn;
     try {
@@ -15,7 +10,7 @@ class Application {
         `INSERT INTO applications (
           email, first_name, last_name, school, class, 
           birthdate, phone, superpowers
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           application.email,
           application.first_name,
@@ -28,6 +23,7 @@ class Application {
         ]
       );
       
+      
       return { 
         id: Number(result.insertId), 
       };
@@ -38,9 +34,6 @@ class Application {
     }
   }
 
-  /**
-   * Get all applications from database
-   */
   static async getAll() {
     let conn;
     try {
