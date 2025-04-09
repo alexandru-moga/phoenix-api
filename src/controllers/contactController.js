@@ -33,4 +33,3 @@ const contactController = {
 };
 
 module.exports = contactController;
-module.exports = router;
