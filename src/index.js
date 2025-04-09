@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 const corsOptions = {
   origin: [
     'http://127.0.0.1:5500',
+    'https://phoenixclub.ro',
     '90.95.76.115'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
