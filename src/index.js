@@ -1,36 +1,37 @@
+const https = require('https');
+const fs = require('fs');
 const express = require('express');
-const app = express();
 const cors = require('cors');
 require('dotenv').config();
 
-const { initDatabase } = require('./config/db');
 const applicationRoutes = require('./routes/applicationRoutes');
+const { initDatabase } = require('./config/db');
 
-const PORT = process.env.PORT || 3000;
+const app = express();
 
-// Middleware
-app.use(cors({
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-  }));
-  app.use(express.json()); // Parse JSON bodies
-  app.use(express.urlencoded({ extended: true })); // Parse form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Initialize database
-initDatabase().catch(err => {
+const corsOptions = {
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true
+};
+app.use(cors(corsOptions));
+
+initDatabase().catch((err) => {
   console.error('Failed to initialize database:', err);
   process.exit(1);
 });
 
-// Routes
 app.use('/api/applications', applicationRoutes);
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('Phoenix Club Application API is running');
-});
+const options = {
+  key: fs.readFileSync('./ssl/api.phoenixclub.ro.key'),
+  cert: fs.readFileSync('./ssl/api.phoenixclub.ro.crt'),
+  secureProtocol: 'TLSv1_2_method' // Enforce TLS 1.2
+};
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+https.createServer(options, app).listen(3000, () => {
+  console.log('API running on https://localhost:3000');
 });
