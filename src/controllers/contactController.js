@@ -1,12 +1,6 @@
 const Contact = require('../models/contact');
 const { sendContactToDiscord } = require('../utils/discord');
 
-const express = require('express');
-const router = express.Router();
-const contactController = require('../controllers/contactController');
-
-router.post('/submit', contactController.submitContact);
-
 const contactController = {
   async submitContact(req, res) {
     try {
