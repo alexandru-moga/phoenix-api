@@ -4,9 +4,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes);
-
 const app = express();
 
 app.use(express.json());
@@ -32,9 +29,11 @@ initDatabase().catch((err) => {
 
 const contactRoutes = require('./routes/contactRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
+const authRoutes = require('./routes/authRoutes'); // Add this line
 
 app.use('/api/contact', contactRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/auth', authRoutes); // Add this after app initialization
 
 const options = {
   key: fs.readFileSync('/etc/letsencrypt/live/api.phoenixclub.ro/privkey.pem'),
