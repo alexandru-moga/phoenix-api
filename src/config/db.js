@@ -72,37 +72,39 @@ async function initDatabase() {
     `);
     console.log('Members table verified');
 
-    // Add any missing columns to "members" table
+    // Add missing columns to "members" table
     const columnsToAdd = [
       { name: 'login_code', type: 'VARCHAR(6)' },
       { name: 'login_code_expires', type: 'DATETIME' }
     ];
-    
+
     for (const column of columnsToAdd) {
-      const [exists] = await conn.query(`
+      const rows = await conn.query(`
         SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
         WHERE TABLE_SCHEMA = ?
           AND TABLE_NAME = 'members'
           AND COLUMN_NAME = ?
       `, [process.env.DB_NAME, column.name]);
-    
-      if (!exists.length) {
-        await conn.query(`ALTER TABLE members ADD COLUMN ${column.name} ${column.type} DEFAULT NULL`);
+
+      if (rows.length === 0) {
+        await conn.query(`
+          ALTER TABLE members 
+          ADD COLUMN ${column.name} ${column.type} DEFAULT NULL
+        `);
         console.log(`Added column ${column.name}`);
       }
     }
-    
 
-    // Commit all changes
+    // Commit changes
     await conn.commit();
     console.log('Database schema updated successfully');
   } catch (err) {
-    if (conn) await conn.rollback(); // Rollback on error
+    if (conn) await conn.rollback();
     console.error('Database initialization failed:', err);
     throw err;
   } finally {
-    if (conn) conn.release(); // Release connection back to pool
+    if (conn) conn.release();
   }
 }
 
