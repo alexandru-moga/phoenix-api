@@ -31,7 +31,7 @@ router.post('/login', async (req, res) => {
   const { email, code } = req.body;
   try {
     const [rows] = await pool.query(
-      `SELECT id, yswd_projects FROM members 
+      `SELECT id, ysws_projects FROM members 
        WHERE email = ? 
        AND login_code = ?
        AND login_code_expires > NOW()`,
@@ -56,7 +56,7 @@ router.post('/login', async (req, res) => {
     res.json({ 
       success: true, 
       token,
-      projects: JSON.parse(rows[0].yswd_projects || '[]')
+      projects: JSON.parse(rows[0].ysws_projects || '[]')
     });
     
   } catch (error) {
