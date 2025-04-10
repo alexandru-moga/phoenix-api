@@ -42,5 +42,5 @@ const options = {
 };
 
 https.createServer(options, app).listen(3000, () => {
-  console.log('API running on https://api.phoenixclub.ro:3000');
+  console.log('API running on https://api.phoenixclub.ro');
 });

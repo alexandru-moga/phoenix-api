@@ -37,12 +37,13 @@ router.post('/login', async (req, res) => {
   const { email, code } = req.body;
   try {
     const [rows] = await pool.query(
-      `SELECT id, yswd_projects FROM members 
-       WHERE email = ? 
-       AND login_code = ?
-       AND login_code_expires > NOW()`,
-      [email, code]
-    );
+      `INSERT INTO members (email, login_code, login_code_expires)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       login_code = VALUES(login_code),
+       login_code_expires = VALUES(login_code_expires)`,
+      [email, code, expires]
+    );    
 
     if (rows.length === 0) {
       return res.status(401).json({ success: false, message: 'Invalid code' });

@@ -48,21 +48,21 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS members (
         id INT NOT NULL AUTO_INCREMENT,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
+        first_name VARCHAR(100) DEFAULT NULL,
+        last_name VARCHAR(100) DEFAULT NULL,
         email VARCHAR(255) NOT NULL,
         login_code VARCHAR(6),
         login_code_expires DATETIME,
-        discord_id VARCHAR(255) NOT NULL,
-        school VARCHAR(255) NOT NULL,
-        ysws_projects TEXT NOT NULL,
-        hcb_member VARCHAR(255) NOT NULL,
-        birthdate DATE NOT NULL,
-        class VARCHAR(20) NOT NULL,
-        phone VARCHAR(20) NOT NULL,
-        role VARCHAR(50) NOT NULL,
+        discord_id VARCHAR(255) DEFAULT NULL,
+        school VARCHAR(255) DEFAULT NULL,
+        ysws_projects TEXT DEFAULT NULL,
+        hcb_member VARCHAR(255) DEFAULT NULL,
+        birthdate DATE DEFAULT NULL,
+        class VARCHAR(20) DEFAULT NULL,
+        phone VARCHAR(20) DEFAULT NULL,
+        role VARCHAR(50) DEFAULT NULL,
         join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        description TEXT NOT NULL,
+        description TEXT DEFAULT NULL,
         PRIMARY KEY (id)
       )
     `);
