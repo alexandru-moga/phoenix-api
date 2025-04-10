@@ -52,7 +52,7 @@ async function initDatabase() {
         last_name VARCHAR(100) NOT NULL,
         email VARCHAR(255) NOT NULL,
         login_code VARCHAR(6),
-        login_code_expires DATETIME;
+        login_code_expires DATETIME,
         discord_id VARCHAR(255) NOT NULL,
         school VARCHAR(255) NOT NULL,
         ysws_projects TEXT NOT NULL,
