@@ -48,7 +48,8 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS members (
         id INT NOT NULL AUTO_INCREMENT,
-        name VARCHAR(255) NOT NULL,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
         email VARCHAR(255) NOT NULL,
         discord_id VARCHAR(255) NOT NULL,
         school VARCHAR(255) NOT NULL,
