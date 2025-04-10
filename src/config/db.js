@@ -86,7 +86,7 @@ async function initDatabase() {
         FROM INFORMATION_SCHEMA.COLUMNS 
         WHERE TABLE_NAME = 'members' 
           AND COLUMN_NAME = ?
-      `, [column.name]);
+      `, [process.env.DB_NAME, column.name]);
 
       if (!exists.length) {
         await conn.query(`
