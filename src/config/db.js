@@ -59,7 +59,7 @@ async function initDatabase() {
         email VARCHAR(255) NOT NULL UNIQUE,
         discord_id VARCHAR(255) DEFAULT NULL,
         school VARCHAR(255) DEFAULT NULL,
-        yswd_projects TEXT DEFAULT NULL,
+        ysws_projects TEXT DEFAULT NULL,
         hcb_member VARCHAR(255) DEFAULT NULL,
         birthdate DATE DEFAULT NULL,
         class VARCHAR(20) DEFAULT NULL,
