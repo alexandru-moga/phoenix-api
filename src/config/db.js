@@ -56,12 +56,10 @@ async function initDatabase() {
         id INT NOT NULL AUTO_INCREMENT,
         first_name VARCHAR(100) DEFAULT NULL,
         last_name VARCHAR(100) DEFAULT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE, -- Ensure unique emails
-        login_code VARCHAR(6) DEFAULT NULL, -- Add if not exists logic below
-        login_code_expires DATETIME DEFAULT NULL, -- Add if not exists logic below
+        email VARCHAR(255) NOT NULL UNIQUE,
         discord_id VARCHAR(255) DEFAULT NULL,
         school VARCHAR(255) DEFAULT NULL,
-        ysws_projects TEXT DEFAULT NULL,
+        yswd_projects TEXT DEFAULT NULL,
         hcb_member VARCHAR(255) DEFAULT NULL,
         birthdate DATE DEFAULT NULL,
         class VARCHAR(20) DEFAULT NULL,
@@ -79,7 +77,7 @@ async function initDatabase() {
       { name: 'login_code', type: 'VARCHAR(6)' },
       { name: 'login_code_expires', type: 'DATETIME' }
     ];
-
+    
     for (const column of columnsToAdd) {
       const [exists] = await conn.query(`
         SELECT COLUMN_NAME 
@@ -88,17 +86,13 @@ async function initDatabase() {
           AND TABLE_NAME = 'members'
           AND COLUMN_NAME = ?
       `, [process.env.DB_NAME, column.name]);
-
+    
       if (!exists.length) {
-        await conn.query(`
-          ALTER TABLE members 
-          ADD COLUMN ${column.name} ${column.type} DEFAULT NULL
-        `);
-        console.log(`Added column ${column.name} to members table`);
-      } else {
-        console.log(`Column ${column.name} already exists in members table`);
+        await conn.query(`ALTER TABLE members ADD COLUMN ${column.name} ${column.type} DEFAULT NULL`);
+        console.log(`Added column ${column.name}`);
       }
     }
+    
 
     // Commit all changes
     await conn.commit();
