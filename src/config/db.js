@@ -16,8 +16,10 @@ async function initDatabase() {
     conn = await pool.getConnection();
     console.log('Database connected successfully');
 
+    // Start transaction for schema updates
     await conn.beginTransaction();
 
+    // Create or verify "applications" table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id INT NOT NULL AUTO_INCREMENT,
@@ -31,9 +33,11 @@ async function initDatabase() {
         superpowers TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)
-      )`);
+      )
+    `);
     console.log('Applications table verified');
 
+    // Create or verify "contact_submissions" table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS contact_submissions (
         id INT NOT NULL AUTO_INCREMENT,
@@ -42,15 +46,17 @@ async function initDatabase() {
         message TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)
-      )`);
+      )
+    `);
     console.log('Contact submissions table verified');
 
+    // Create or verify "members" table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS members (
         id INT NOT NULL AUTO_INCREMENT,
         first_name VARCHAR(100) DEFAULT NULL,
         last_name VARCHAR(100) DEFAULT NULL,
-        email VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE, -- Ensure unique emails
         login_code VARCHAR(6) DEFAULT NULL,
         login_code_expires DATETIME DEFAULT NULL,
         discord_id VARCHAR(255) DEFAULT NULL,
@@ -64,25 +70,11 @@ async function initDatabase() {
         join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         description TEXT DEFAULT NULL,
         PRIMARY KEY (id)
-      )`);
+      )
+    `);
     console.log('Members table verified');
 
-    const [emailIndex] = await conn.query(`
-      SELECT CONSTRAINT_NAME 
-      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-      WHERE TABLE_NAME = 'members' 
-      AND CONSTRAINT_TYPE = 'UNIQUE' 
-      AND CONSTRAINT_NAME = 'unique_email'
-    `);
-    
-    if (!emailIndex.length) {
-      await conn.query(`
-        ALTER TABLE members 
-        ADD CONSTRAINT unique_email UNIQUE (email)
-      `);
-      console.log('Added unique email constraint');
-    }
-
+    // Add any missing columns to "members" table
     const columnsToAdd = [
       { name: 'login_code', type: 'VARCHAR(6)' },
       { name: 'login_code_expires', type: 'DATETIME' }
@@ -93,7 +85,7 @@ async function initDatabase() {
         SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
         WHERE TABLE_NAME = 'members' 
-        AND COLUMN_NAME = ?
+          AND COLUMN_NAME = ?
       `, [column.name]);
 
       if (!exists.length) {
@@ -105,15 +97,15 @@ async function initDatabase() {
       }
     }
 
+    // Commit all changes
     await conn.commit();
     console.log('Database schema updated successfully');
-
   } catch (err) {
-    await conn.rollback();
+    if (conn) await conn.rollback(); // Rollback on error
     console.error('Database initialization failed:', err);
     throw err;
   } finally {
-    if (conn) conn.release();
+    if (conn) conn.release(); // Release connection back to pool
   }
 }
 
