@@ -29,21 +29,34 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   const { email, code } = req.body;
+  
   try {
     const [rows] = await pool.query(
-      `SELECT id, ysws_projects FROM members 
+      `SELECT id, yswd_projects FROM members 
        WHERE email = ? 
        AND login_code = ?
        AND login_code_expires > NOW()`,
       [email, code]
-    );    
+    );
 
-    if (rows.length === 0) {
-      return res.status(401).json({ success: false, message: 'Invalid code' });
+    // Add this check
+    if (!rows || rows.length === 0) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid or expired code' 
+      });
+    }
+
+    const user = rows[0];
+    if (!user?.id) { // Additional check
+      return res.status(500).json({ 
+        success: false, 
+        message: 'User ID not found' 
+      });
     }
 
     const token = jwt.sign(
-      { userId: rows[0].id },
+      { userId: user.id }, // Now safe
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -56,7 +69,7 @@ router.post('/login', async (req, res) => {
     res.json({ 
       success: true, 
       token,
-      projects: JSON.parse(rows[0].ysws_projects || '[]')
+      projects: JSON.parse(user.yswd_projects || '[]')
     });
     
   } catch (error) {
