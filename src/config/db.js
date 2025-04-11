@@ -16,10 +16,8 @@ async function initDatabase() {
     conn = await pool.getConnection();
     console.log('Database connected successfully');
 
-    // Start transaction for schema updates
     await conn.beginTransaction();
 
-    // Create or verify "applications" table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id INT NOT NULL AUTO_INCREMENT,
@@ -37,7 +35,6 @@ async function initDatabase() {
     `);
     console.log('Applications table verified');
 
-    // Create or verify "contact_submissions" table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS contact_submissions (
         id INT NOT NULL AUTO_INCREMENT,
@@ -50,7 +47,6 @@ async function initDatabase() {
     `);
     console.log('Contact submissions table verified');
 
-    // Create or verify "members" table
     await conn.query(`
       CREATE TABLE IF NOT EXISTS members (
         id INT NOT NULL AUTO_INCREMENT,
@@ -72,7 +68,6 @@ async function initDatabase() {
     `);
     console.log('Members table verified');
 
-    // Add missing columns to "members" table
     const columnsToAdd = [
       { name: 'login_code', type: 'VARCHAR(6)' },
       { name: 'login_code_expires', type: 'DATETIME' }
@@ -96,7 +91,6 @@ async function initDatabase() {
       }
     }
 
-    // Commit changes
     await conn.commit();
     console.log('Database schema updated successfully');
   } catch (err) {
