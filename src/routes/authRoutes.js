@@ -15,16 +15,18 @@ router.post('/send-code', async (req, res) => {
     }
 
     try {
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = Math.floor(100000 + Math.random() * 900000)
+        .toString()
+        .padStart(6, '0');
         const expires = new Date(Date.now() + 15 * 60 * 1000);
 
         await pool.query(
             `INSERT INTO members (email, login_code, login_code_expires)
-            VALUES (?, ?, CONVERT_TZ(?, '+00:00', @@session.time_zone))
+            VALUES (?, ?, ?)
             ON DUPLICATE KEY UPDATE
             login_code = VALUES(login_code),
             login_code_expires = VALUES(login_code_expires)`,
-            [email, code, expires]
+            [email, code, expires.toISOString().slice(0, 19).replace('T', ' ')]
         );
 
         await sendLoginCode(email, code);
@@ -54,12 +56,12 @@ router.post('/verify-code', async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT 
-                id AS userId,
+                id AS userid,
                 ysws_projects 
             FROM members
             WHERE email = ?
             AND login_code = ?
-            AND login_code_expires > CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', @@session.time_zone)`,
+            AND login_code_expires > UTC_TIMESTAMP()`,
             [email, code]
         );
 
@@ -72,12 +74,12 @@ router.post('/verify-code', async (req, res) => {
 
         const user = rows[0];
         
-        if (typeof user.userId === 'undefined') {
+        if (typeof user.userid === 'undefined') {
             throw new Error('User ID not found in query results');
         }
 
         const token = jwt.sign(
-            { userId: user.userId },
+            { userId: user.userid },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
