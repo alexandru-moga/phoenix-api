@@ -107,29 +107,29 @@ async function createMembersTable(conn) {
 }
 
 async function addAuthColumns(conn) {
-    const columns = [
-        { name: 'login_code', type: 'CHAR(6)' },
-        { name: 'login_code_expires', type: 'DATETIME' }
-    ];
+  const columns = [
+      { name: 'login_code', type: 'CHAR(6)' },
+      { name: 'login_code_expires', type: 'DATETIME' }
+  ];
 
-    for (const column of columns) {
-        const [rows] = await conn.query(
-            `SELECT COLUMN_NAME 
-             FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = ? 
-             AND TABLE_NAME = 'members' 
-             AND COLUMN_NAME = ?`,
-            [process.env.DB_NAME, column.name]
-        );
+  for (const column of columns) {
+      const [rows = []] = await conn.query(
+          `SELECT COLUMN_NAME 
+           FROM INFORMATION_SCHEMA.COLUMNS 
+           WHERE TABLE_SCHEMA = ? 
+           AND TABLE_NAME = 'members' 
+           AND COLUMN_NAME = ?`,
+          [process.env.DB_NAME, column.name]
+      );
 
-        if (rows.length === 0) {
-            await conn.query(
-                `ALTER TABLE members 
-                 ADD COLUMN ${column.name} ${column.type} DEFAULT NULL`
-            );
-            console.log(`Added column ${column.name} to members table`);
-        }
-    }
+      if (rows?.length ?? 0 === 0) {
+          await conn.query(
+              `ALTER TABLE members 
+               ADD COLUMN ${column.name} ${column.type} DEFAULT NULL`
+          );
+          console.log(`Added column ${column.name} to members table`);
+      }
+  }
 }
 
 async function createIndexes(conn) {
