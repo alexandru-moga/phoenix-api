@@ -133,27 +133,36 @@ async function addAuthColumns(conn) {
 }
 
 async function createIndexes(conn) {
-    const indexes = [
-        { name: 'idx_login_code', column: 'login_code' },
-        { name: 'idx_login_code_expires', column: 'login_code_expires' }
-    ];
+  const indexes = [
+      { name: 'idx_login_code', column: 'login_code' },
+      { name: 'idx_login_code_expires', column: 'login_code_expires' }
+  ];
 
-    for (const index of indexes) {
-        const [existing] = await conn.query(
-            `SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS 
-             WHERE TABLE_SCHEMA = ? 
-             AND TABLE_NAME = 'members' 
-             AND INDEX_NAME = ?`,
-            [process.env.DB_NAME, index.name]
-        );
+  for (const index of indexes) {
+      try {
+          const [rows] = await conn.query(
+              `SELECT INDEX_NAME 
+               FROM INFORMATION_SCHEMA.STATISTICS 
+               WHERE TABLE_SCHEMA = ? 
+               AND TABLE_NAME = 'members' 
+               AND INDEX_NAME = ?`,
+              [process.env.DB_NAME, index.name]
+          );
 
-        if (existing.length === 0) {
-            await conn.query(
-                `CREATE INDEX ${index.name} ON members (${index.column})`
-            );
-            console.log(`Created index ${index.name}`);
-        }
-    }
+          if (!rows || rows.length === 0) {
+              await conn.query(
+                  `CREATE INDEX ${index.name} ON members (${index.column})`
+              );
+              console.log(`Created index ${index.name}`);
+          } else {
+              console.log(`Index ${index.name} already exists`);
+          }
+      } catch (error) {
+          console.error(`Index operation failed for ${index.name}:`, error);
+          throw error;
+      }
+  }
 }
+
 
 module.exports = { pool, initDatabase };
