@@ -18,13 +18,15 @@ router.post('/send-code', async (req, res) => {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-        await pool.query(
-            `INSERT INTO members (email, login_code, login_code_expires)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-            login_code = VALUES(login_code),
-            login_code_expires = VALUES(login_code_expires)`,
-            [email, code, expires]
+        const [rows] = await pool.query(
+            `SELECT 
+                id AS userId,  -- Explicit alias
+                ysws_projects 
+            FROM members
+            WHERE email = ? 
+            AND login_code = ? 
+            AND login_code_expires > NOW()`,
+            [email, code]
         );
 
         await sendLoginCode(email, code);
@@ -54,12 +56,17 @@ router.post('/verify-code', async (req, res) => {
 
     try {
         const [rows] = await pool.query(
-            `SELECT id, ysws_projects FROM members
+            `SELECT 
+                id AS userId,
+                ysws_projects 
+            FROM members
             WHERE email = ?
             AND login_code = ?
             AND login_code_expires > NOW()`,
             [email, code]
         );
+
+        console.log('Query results:', rows); // Debug log
 
         if (!rows || rows.length === 0) {
             return res.status(401).json({
@@ -69,14 +76,23 @@ router.post('/verify-code', async (req, res) => {
         }
 
         const user = rows[0];
+        console.log('User object:', user); // Debug log
+
+        if (!user.userId) {
+            throw new Error('User ID not found in query results');
+        }
+
         const token = jwt.sign(
-            { userId: user.id },
+            { userId: user.userId },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
         await pool.query(
-            `UPDATE members SET login_code = NULL WHERE email = ?`,
+            `UPDATE members SET 
+                login_code = NULL,
+                login_code_expires = NULL 
+            WHERE email = ?`,
             [email]
         );
 
@@ -90,7 +106,7 @@ router.post('/verify-code', async (req, res) => {
         console.error('Verify code error:', error);
         res.status(500).json({ 
             success: false,
-            message: 'Verification failed'
+            message: error.message || 'Verification failed'
         });
     }
 });
