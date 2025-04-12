@@ -54,14 +54,14 @@ router.post('/verify-code', async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT 
-                id AS \`userId\`,
+                id AS userid,  -- Lowercase alias
                 ysws_projects 
             FROM members
             WHERE email = ?
             AND login_code = ?
             AND login_code_expires > NOW()`,
             [email, code]
-        );
+        )
 
         console.log('Query results:', rows); // Debug log
 
@@ -75,12 +75,12 @@ router.post('/verify-code', async (req, res) => {
         const user = rows[0];
         console.log('User object:', user); // Debug log
 
-        if (!user.userId) {
+        if (!user.userid) {
             throw new Error('User ID not found in query results');
         }
 
         const token = jwt.sign(
-            { userId: user.userId },
+            { userId: user.userid },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
