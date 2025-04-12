@@ -76,7 +76,8 @@ async function initDatabase() {
                 role VARCHAR(50) DEFAULT NULL,
                 join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 description TEXT DEFAULT NULL,
-                totp_secret VARCHAR(40) CHARACTER SET ascii COLLATE ascii_bin,
+                login_code VARCHAR(6) DEFAULT NULL,
+                login_code_expires DATETIME DEFAULT NULL,
                 PRIMARY KEY (id)
             ) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
         `);
