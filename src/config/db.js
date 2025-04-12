@@ -12,12 +12,15 @@ const pool = mariadb.createPool({
   namedPlaceholders: true,
   supportBigNumbers: true,
   typeCast: function (field, next) {
-      if (field.name.toLowerCase() === 'userid') {
-          return parseInt(field.string());
+      if (field && 
+          typeof field.name === 'string' && 
+          field.name.toLowerCase() === 'userid') {
+          const value = field.string();
+          return value ? parseInt(value) : null;
       }
       return next();
   }
-})
+});
 
 async function initDatabase() {
   let conn;
