@@ -25,31 +25,35 @@ const pool = mariadb.createPool({
 });
 
 async function initDatabase() {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        console.log('Database connected successfully');
-        
-        await conn.beginTransaction();
+  let conn;
+  try {
+      conn = await pool.getConnection();
+      console.log('Database connected successfully');
+      
+      await conn.beginTransaction();
 
-        await createApplicationsTable(conn);
-        await createContactSubmissionsTable(conn);
-        await createMembersTable(conn);
+      // 1. Create tables first
+      await createApplicationsTable(conn);
+      await createContactSubmissionsTable(conn);
+      await createMembersTable(conn);
 
-        await addAuthColumns(conn);
-        
-        await createIndexes(conn);
+      // 2. Add columns if missing
+      await addAuthColumns(conn);
+      
+      // 3. Create indexes after columns exist
+      await createIndexes(conn);
 
-        await conn.commit();
-        console.log('Database schema validated successfully');
-    } catch (err) {
-        if (conn) await conn.rollback();
-        console.error('Database initialization failed:', err);
-        throw err;
-    } finally {
-        if (conn) conn.release();
-    }
+      await conn.commit();
+      console.log('Database schema validated successfully');
+  } catch (err) {
+      if (conn) await conn.rollback();
+      console.error('Database initialization failed:', err);
+      throw err;
+  } finally {
+      if (conn) conn.release();
+  }
 }
+
 
 async function createApplicationsTable(conn) {
     await conn.query(`
@@ -108,26 +112,26 @@ async function createMembersTable(conn) {
 
 async function addAuthColumns(conn) {
   const columns = [
-      { name: 'login_code', type: 'CHAR(6)' },
+      { name: 'login_code', type: 'CHAR(6) CHARACTER SET ascii COLLATE ascii_bin' },
       { name: 'login_code_expires', type: 'DATETIME' }
   ];
 
   for (const column of columns) {
-      const [rows = []] = await conn.query(
+      const [rows] = await conn.query(
           `SELECT COLUMN_NAME 
            FROM INFORMATION_SCHEMA.COLUMNS 
            WHERE TABLE_SCHEMA = ? 
-           AND TABLE_NAME = 'members' 
+           AND TABLE_NAME = 'members'
            AND COLUMN_NAME = ?`,
           [process.env.DB_NAME, column.name]
       );
 
-      if (rows?.length ?? 0 === 0) {
+      if (rows.length === 0) {
+          console.log(`Adding column ${column.name}...`);
           await conn.query(
               `ALTER TABLE members 
                ADD COLUMN ${column.name} ${column.type} DEFAULT NULL`
           );
-          console.log(`Added column ${column.name} to members table`);
       }
   }
 }

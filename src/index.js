@@ -15,8 +15,8 @@ const corsOptions = {
     'https://phoenixclub.ro',
     '90.95.76.115'
   ],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 };
 app.use(cors(corsOptions));
@@ -44,3 +44,47 @@ const options = {
 https.createServer(options, app).listen(3000, () => {
   console.log('API running on https://api.phoenixclub.ro');
 });
+
+async function createIndexes(conn) {
+  const indexes = [
+      { name: 'idx_login_code', column: 'login_code' },
+      { name: 'idx_login_code_expires', column: 'login_code_expires' }
+  ];
+
+  for (const index of indexes) {
+      try {
+          // Verify column exists first
+          const [colCheck] = await conn.query(
+              `SELECT COLUMN_NAME 
+               FROM INFORMATION_SCHEMA.COLUMNS 
+               WHERE TABLE_SCHEMA = ? 
+               AND TABLE_NAME = 'members'
+               AND COLUMN_NAME = ?`,
+              [process.env.DB_NAME, index.column]
+          );
+
+          if (colCheck.length === 0) {
+              throw new Error(`Column ${index.column} missing for index ${index.name}`);
+          }
+
+          const [indexCheck] = await conn.query(
+              `SELECT INDEX_NAME 
+               FROM INFORMATION_SCHEMA.STATISTICS 
+               WHERE TABLE_SCHEMA = ? 
+               AND TABLE_NAME = 'members'
+               AND INDEX_NAME = ?`,
+              [process.env.DB_NAME, index.name]
+          );
+
+          if (indexCheck.length === 0) {
+              await conn.query(
+                  `CREATE INDEX ${index.name} ON members (${index.column})`
+              );
+              console.log(`Created index ${index.name}`);
+          }
+      } catch (error) {
+          console.error(`Index operation failed: ${error.message}`);
+          throw error;
+      }
+  }
+}
