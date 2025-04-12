@@ -63,6 +63,8 @@ async function initDatabase() {
         role VARCHAR(50) DEFAULT NULL,
         join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         description TEXT DEFAULT NULL,
+        login_code VARCHAR(6) DEFAULT NULL,
+        login_code_expires DATETIME DEFAULT NULL,
         PRIMARY KEY (id)
       )
     `);

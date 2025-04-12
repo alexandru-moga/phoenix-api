@@ -18,15 +18,13 @@ router.post('/send-code', async (req, res) => {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-        const [rows] = await pool.query(
-            `SELECT 
-                id AS userId,  -- Explicit alias
-                ysws_projects 
-            FROM members
-            WHERE email = ? 
-            AND login_code = ? 
-            AND login_code_expires > NOW()`,
-            [email, code]
+        await pool.query(
+            `INSERT INTO members (email, login_code, login_code_expires)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            login_code = VALUES(login_code),
+            login_code_expires = VALUES(login_code_expires)`,
+            [email, code, expires]
         );
 
         await sendLoginCode(email, code);
@@ -34,7 +32,6 @@ router.post('/send-code', async (req, res) => {
             success: true,
             message: 'Login code sent to email'
         });
-        
     } catch (error) {
         console.error('Send code error:', error);
         res.status(500).json({
