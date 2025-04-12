@@ -8,7 +8,15 @@ async function sendLoginCode(email, code) {
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS
-        }
+        },
+        tls: {
+            minVersion: 'TLSv1.2',
+            maxVersion: 'TLSv1.3',
+            ciphers: 'HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP',
+            rejectUnauthorized: true
+        },
+        logger: true,
+        debug: true
     });
 
     const loginUrl = `${process.env.WEBSITE_URL}/login.html?email=${encodeURIComponent(email)}&code=${code}`;

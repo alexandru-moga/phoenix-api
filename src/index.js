@@ -41,6 +41,23 @@ const options = {
   minVersion: 'TLSv1.2'
 };
 
+const httpsOptions = {
+  minVersion: 'TLSv1.2',
+  honorCipherOrder: true,
+  ciphers: [
+      'ECDHE-ECDSA-AES128-GCM-SHA256',
+      'ECDHE-RSA-AES128-GCM-SHA256',
+      'ECDHE-ECDSA-AES256-GCM-SHA384',
+      'ECDHE-RSA-AES256-GCM-SHA384'
+  ].join(':'),
+  key: fs.readFileSync('/etc/letsencrypt/live/api.phoenixclub.ro/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/api.phoenixclub.ro/fullchain.pem')
+};
+
+https.createServer(httpsOptions, app).listen(3000, () => {
+  console.log('API running on https://api.phoenixclub.ro');
+});
+
 https.createServer(options, app).listen(3000, () => {
   console.log('API running on https://api.phoenixclub.ro');
 });
