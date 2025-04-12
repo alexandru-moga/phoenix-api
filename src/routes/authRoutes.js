@@ -54,12 +54,12 @@ router.post('/verify-code', async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT 
-                id AS userId,  -- Explicit case-sensitive alias
+                id AS userId,
                 ysws_projects 
-            FROM members 
+            FROM members
             WHERE email = ?
             AND login_code = ?
-            AND login_code_expires > NOW()`,
+            AND login_code_expires > CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', @@session.time_zone)`,
             [email, code]
         );
 
