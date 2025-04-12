@@ -54,7 +54,7 @@ async function createIndexes(conn) {
   for (const index of indexes) {
       try {
           // Verify column exists first
-          const [colCheck] = await conn.query(
+          const [colRows] = await conn.query(
               `SELECT COLUMN_NAME 
                FROM INFORMATION_SCHEMA.COLUMNS 
                WHERE TABLE_SCHEMA = ? 
@@ -63,11 +63,12 @@ async function createIndexes(conn) {
               [process.env.DB_NAME, index.column]
           );
 
-          if (colCheck.length === 0) {
+          if (colRows.length === 0) {
               throw new Error(`Column ${index.column} missing for index ${index.name}`);
           }
 
-          const [indexCheck] = await conn.query(
+          // Create index if missing
+          const [indexRows] = await conn.query(
               `SELECT INDEX_NAME 
                FROM INFORMATION_SCHEMA.STATISTICS 
                WHERE TABLE_SCHEMA = ? 
@@ -76,7 +77,7 @@ async function createIndexes(conn) {
               [process.env.DB_NAME, index.name]
           );
 
-          if (indexCheck.length === 0) {
+          if (indexRows.length === 0) {
               await conn.query(
                   `CREATE INDEX ${index.name} ON members (${index.column})`
               );

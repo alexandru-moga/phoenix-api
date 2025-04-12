@@ -32,12 +32,12 @@ async function initDatabase() {
       
       await conn.beginTransaction();
 
-      // 1. Create tables first
+      // 1. Create core tables first
       await createApplicationsTable(conn);
       await createContactSubmissionsTable(conn);
-      await createMembersTable(conn);
+      await createMembersTable(conn); // Creates table without auth columns
 
-      // 2. Add columns if missing
+      // 2. Add auth columns explicitly
       await addAuthColumns(conn);
       
       // 3. Create indexes after columns exist
@@ -53,7 +53,6 @@ async function initDatabase() {
       if (conn) conn.release();
   }
 }
-
 
 async function createApplicationsTable(conn) {
     await conn.query(`
@@ -163,6 +162,37 @@ async function createIndexes(conn) {
           }
       } catch (error) {
           console.error(`Index operation failed for ${index.name}:`, error);
+          throw error;
+      }
+  }
+}
+
+async function addAuthColumns(conn) {
+  const columns = [
+      { name: 'login_code', type: 'CHAR(6) CHARACTER SET ascii COLLATE ascii_bin' },
+      { name: 'login_code_expires', type: 'DATETIME' }
+  ];
+
+  for (const column of columns) {
+      try {
+          const [rows = []] = await conn.query(
+              `SELECT COLUMN_NAME 
+               FROM INFORMATION_SCHEMA.COLUMNS 
+               WHERE TABLE_SCHEMA = ? 
+               AND TABLE_NAME = 'members' 
+               AND COLUMN_NAME = ?`,
+              [process.env.DB_NAME, column.name]
+          );
+
+          if (rows.length === 0) {
+              console.log(`Adding column ${column.name}...`);
+              await conn.query(
+                  `ALTER TABLE members 
+                   ADD COLUMN ${column.name} ${column.type} DEFAULT NULL`
+              );
+          }
+      } catch (error) {
+          console.error(`Column check failed for ${column.name}:`, error);
           throw error;
       }
   }
