@@ -8,9 +8,9 @@ router.post('/send-code', async (req, res) => {
     const { email } = req.body;
     
     if (!email) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             success: false,
-            message: 'Email is required'
+            message: 'Valid email address is required'
         });
     }
 
@@ -28,7 +28,7 @@ router.post('/send-code', async (req, res) => {
         );
 
         await sendLoginCode(email, code);
-        res.json({ 
+        res.json({
             success: true,
             message: 'Login code sent to email'
         });
@@ -36,7 +36,7 @@ router.post('/send-code', async (req, res) => {
         console.error('Send code error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to send code'
+            message: 'Failed to process code request'
         });
     }
 });
@@ -45,7 +45,7 @@ router.post('/verify-code', async (req, res) => {
     const { email, code } = req.body;
     
     if (!email || !code) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             success: false,
             message: 'Email and code are required'
         });
@@ -54,18 +54,16 @@ router.post('/verify-code', async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT 
-                id AS userid,  -- Lowercase alias
+                id AS userId,  -- Explicit case-sensitive alias
                 ysws_projects 
-            FROM members
+            FROM members 
             WHERE email = ?
             AND login_code = ?
             AND login_code_expires > NOW()`,
             [email, code]
-        )
+        );
 
-        console.log('Query results:', rows); // Debug log
-
-        if (!rows || rows.length === 0) {
+        if (!rows?.length) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid or expired code'
@@ -73,22 +71,21 @@ router.post('/verify-code', async (req, res) => {
         }
 
         const user = rows[0];
-        console.log('User object:', user); // Debug log
-
-        if (!user.userid) {
+        
+        if (typeof user.userId === 'undefined') {
             throw new Error('User ID not found in query results');
         }
 
         const token = jwt.sign(
-            { userId: user.userid },
+            { userId: user.userId },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
         await pool.query(
-            `UPDATE members SET 
-                login_code = NULL,
-                login_code_expires = NULL 
+            `UPDATE members 
+            SET login_code = NULL,
+                login_code_expires = NULL
             WHERE email = ?`,
             [email]
         );
@@ -98,10 +95,9 @@ router.post('/verify-code', async (req, res) => {
             token,
             projects: JSON.parse(user.ysws_projects || '[]')
         });
-
     } catch (error) {
         console.error('Verify code error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: error.message || 'Verification failed'
         });
