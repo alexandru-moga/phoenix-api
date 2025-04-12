@@ -54,7 +54,7 @@ router.post('/verify-code', async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT 
-                id AS userId,
+                id AS \`userId\`,
                 ysws_projects 
             FROM members
             WHERE email = ?
