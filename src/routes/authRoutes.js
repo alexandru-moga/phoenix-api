@@ -1,109 +1,134 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
-const { sendLoginCode } = require('../utils/mailer');
+const { authenticator } = require('otplib');
+const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 
-router.post('/send-code', async (req, res) => {
-    const { email } = req.body;
-    
-    if (!email) {
-        return res.status(400).json({
-            success: false,
-            message: 'Valid email address is required'
-        });
+authenticator.options = {
+  digits: 6,
+  step: 30,
+  window: 1
+};
+
+router.post('/start-auth', async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Email is required' 
+    });
+  }
+
+  try {
+    const [userRows] = await pool.query(
+      'SELECT id, totp_secret FROM members WHERE email = ?',
+      [email]
+    );
+
+    let user = userRows[0];
+    let isNewSecret = false;
+
+    if (!user || !user.totp_secret) {
+      const newSecret = authenticator.generateSecret();
+      isNewSecret = true;
+
+      await pool.query(
+        `INSERT INTO members (email, totp_secret)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE
+         totp_secret = VALUES(totp_secret)`,
+        [email, newSecret]
+      );
+
+      user = { totp_secret: newSecret };
     }
 
-    try {
-        const code = Math.floor(100000 + Math.random() * 900000)
-        .toString()
-        .padStart(6, '0');
-        const expires = new Date(Date.now() + 15 * 60 * 1000);
+    const otpauth = authenticator.keyuri(
+      email,
+      'Phoenix Club',
+      user.totp_secret
+    );
 
-        await pool.query(
-            `INSERT INTO members (email, login_code, login_code_expires)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-            login_code = VALUES(login_code),
-            login_code_expires = VALUES(login_code_expires)`,
-            [email, code, expires.toISOString().slice(0, 19).replace('T', ' ')]
-        );
+    const qrCode = await QRCode.toDataURL(otpauth);
 
-        await sendLoginCode(email, code);
-        res.json({
-            success: true,
-            message: 'Login code sent to email'
-        });
-    } catch (error) {
-        console.error('Send code error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to process code request'
-        });
-    }
+    res.json({
+      success: true,
+      qrCode,
+      manualCode: user.totp_secret,
+      isNewSecret
+    });
+
+  } catch (error) {
+    console.error('Auth setup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initialize authentication'
+    });
+  }
 });
 
-router.post('/verify-code', async (req, res) => {
-    const { email, code } = req.body;
+router.post('/verify-totp', async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and code are required'
+    });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, totp_secret FROM members WHERE email = ?',
+      [email]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = rows[0];
     
-    if (!email || !code) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email and code are required'
-        });
+    if (!user.totp_secret) {
+      return res.status(403).json({
+        success: false,
+        message: '2FA not configured'
+      });
     }
 
-    try {
-        const [rows] = await pool.query(
-            `SELECT 
-                id AS userid,
-                ysws_projects 
-            FROM members
-            WHERE email = ?
-            AND login_code = ?
-            AND login_code_expires > UTC_TIMESTAMP()`,
-            [email, code]
-        );
+    const isValid = authenticator.check(code, user.totp_secret);
 
-        if (!rows?.length) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid or expired code'
-            });
-        }
-
-        const user = rows[0];
-        
-        if (typeof user.userid === 'undefined') {
-            throw new Error('User ID not found in query results');
-        }
-
-        const token = jwt.sign(
-            { userId: user.userid },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-
-        await pool.query(
-            `UPDATE members 
-            SET login_code = NULL,
-                login_code_expires = NULL
-            WHERE email = ?`,
-            [email]
-        );
-
-        res.json({
-            success: true,
-            token,
-            projects: JSON.parse(user.ysws_projects || '[]')
-        });
-    } catch (error) {
-        console.error('Verify code error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Verification failed'
-        });
+    if (!isValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid authentication code'
+      });
     }
+
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      message: 'Authentication successful'
+    });
+
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify code'
+    });
+  }
 });
 
 module.exports = router;
