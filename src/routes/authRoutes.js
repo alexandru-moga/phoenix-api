@@ -20,7 +20,7 @@ router.post('/send-code', async (req, res) => {
 
         await pool.query(
             `INSERT INTO members (email, login_code, login_code_expires)
-            VALUES (?, ?, ?)
+            VALUES (?, ?, CONVERT_TZ(?, '+00:00', @@session.time_zone))
             ON DUPLICATE KEY UPDATE
             login_code = VALUES(login_code),
             login_code_expires = VALUES(login_code_expires)`,
