@@ -7,7 +7,15 @@ const pool = mariadb.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  connectionLimit: 5
+  connectionLimit: 5,
+  metaAsArray: false,
+  namedPlaceholders: true,
+  typeCast: function (field, next) {
+      if (field.name === 'userId') {
+          return parseInt(field.string());
+      }
+      return next();
+  }
 });
 
 async function initDatabase() {
