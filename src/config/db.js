@@ -105,22 +105,35 @@ async function initDatabase() {
 }
 
 function parseSchema(sql) {
-  const columns = [];
-  const columnRegex = /`?(\w+)`?\s+([^,]+)(?:,|$)/g;
-  const constraintKeywords = ['PRIMARY', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN'];
+    const columns = [];
+    const columnRegex = /`?(\w+)`?\s+((?:.(?!\b(?:CHARACTER SET|COLLATE|\)\s*ENGINE)))*)/gmi;
+    
+    let columnDefinitions = sql.split('\n').filter(line => 
+      line.trim() && 
+      !line.includes('CREATE TABLE') && 
+      !line.includes('CHARACTER SET') && 
+      !line.includes(') ENGINE')
+    ).join('\n');
   
-  let match;
-  while ((match = columnRegex.exec(sql)) !== null) {
-    const [, name, definition] = match;
-    if (!constraintKeywords.some(kw => definition.toUpperCase().includes(kw))) {
-      columns.push({
-        name: name.trim(),
-        definition: definition.trim().replace(/,$/, '')
-      });
+    let match;
+    while ((match = columnRegex.exec(columnDefinitions)) !== null) {
+      const [, name, definition] = match;
+      const cleanDefinition = definition
+        .replace(/,\s*$/, '')
+        .replace(/\)\s*$/, '')
+        .trim();
+        
+      if (name && cleanDefinition && 
+          !['PRIMARY', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN'].some(kw => 
+            cleanDefinition.toUpperCase().includes(kw))) {
+        columns.push({
+          name: name.trim(),
+          definition: cleanDefinition
+        });
+      }
     }
+    return columns;
   }
-  return columns;
-}
 
 async function ensureColumnsExist(conn, tableName, columns) {
     for (const column of columns) {
