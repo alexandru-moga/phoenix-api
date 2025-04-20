@@ -123,31 +123,32 @@ function parseSchema(sql) {
 }
 
 async function ensureColumnsExist(conn, tableName, columns) {
-  for (const column of columns) {
-    try {
-      const [rows] = await conn.query(
-        `SELECT COLUMN_NAME 
-         FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_SCHEMA = ? 
-           AND TABLE_NAME = ? 
-           AND COLUMN_NAME = ?`,
-        [process.env.DB_NAME, tableName, column.name]
-      );
-
-      if (rows.length === 0) {
-        console.log(`Adding column ${tableName}.${column.name}...`);
-        await conn.query(
-          `ALTER TABLE ${tableName} 
-           ADD COLUMN ${column.name} ${column.definition}`
+    for (const column of columns) {
+      try {
+        const [rows] = await conn.query(
+          `SELECT COLUMN_NAME 
+           FROM INFORMATION_SCHEMA.COLUMNS 
+           WHERE TABLE_SCHEMA = ? 
+             AND TABLE_NAME = ? 
+             AND COLUMN_NAME = ?`,
+          [process.env.DB_NAME, tableName, column.name]
         );
+  
+        // Add null/undefined check here
+        if (!rows || rows.length === 0) {
+          console.log(`Adding column ${tableName}.${column.name}...`);
+          await conn.query(
+            `ALTER TABLE ${tableName} 
+             ADD COLUMN ${column.name} ${column.definition}`
+          );
+        }
+      } catch (error) {
+        console.error(`Column verification failed for ${tableName}.${column.name}:`, error);
+        throw error;
       }
-    } catch (error) {
-      console.error(`Column verification failed for ${tableName}.${column.name}:`, error);
-      throw error;
     }
   }
-}
-
+  
 async function createTables(conn) {
   await conn.query(TABLE_SCHEMAS.members);
   console.log('Members table validated');
