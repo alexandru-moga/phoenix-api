@@ -58,10 +58,6 @@ https.createServer(httpsOptions, app).listen(3000, () => {
   console.log('API running on https://api.phoenixclub.ro');
 });
 
-https.createServer(options, app).listen(3000, () => {
-  console.log('API running on https://api.phoenixclub.ro');
-});
-
 async function createIndexes(conn) {
   const indexes = [
       { name: 'idx_login_code', column: 'login_code' },

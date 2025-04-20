@@ -93,6 +93,8 @@ async function createMembersTable(conn) {
             last_name VARCHAR(100) DEFAULT NULL,
             email VARCHAR(255) NOT NULL UNIQUE,
             discord_id VARCHAR(255) DEFAULT NULL,
+            slack_id TEXT DEFAULT NULL,
+            github_username TEXT DEFAULT NULL,
             school VARCHAR(255) DEFAULT NULL,
             ysws_projects TEXT DEFAULT NULL,
             hcb_member VARCHAR(255) DEFAULT NULL,
