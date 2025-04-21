@@ -54,6 +54,33 @@ const httpsOptions = {
   cert: fs.readFileSync('/etc/letsencrypt/live/api.phoenixclub.ro/fullchain.pem')
 };
 
+app.get('/api/projects', async (req, res) => {
+  try {
+    const { pool } = require('./config/db');
+    const conn = await pool.getConnection();
+    const result = await conn.query('SELECT * FROM ysws_projects');
+    conn.release();
+
+    const today = new Date();
+    const projects = result.map(project => {
+      let status;
+      const start = new Date(project.start_date);
+      const end = new Date(project.end_date);
+
+      if (today < start) status = 'future';
+      else if (today > end) status = 'ended';
+      else status = 'active';
+
+      return { ...project, status };
+    });
+
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+
 app.get('/api/team-members', async (req, res) => {
   try {
     const { pool } = require('./config/db');
