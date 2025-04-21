@@ -60,8 +60,8 @@ app.get('/api/team-members', async (req, res) => {
     const conn = await pool.getConnection();
     console.log('Fetching team members with active_member = 1...');
     
-    // Add description and github_username to SELECT
-    const [members] = await conn.query(`
+    // Get the full result without destructuring
+    const result = await conn.query(`
       SELECT id, first_name, last_name, role, description, github_username
       FROM members
       WHERE active_member = 1
@@ -73,13 +73,22 @@ app.get('/api/team-members', async (req, res) => {
         END,
         last_name ASC
     `);
-    
     conn.release();
-    console.log(`Found ${members ? members.length : 0} active members`);
     
-    const safeMembers = Array.isArray(members) ? members : [];
+    // Handle different result formats from MariaDB
+    let members;
+    if (Array.isArray(result)) {
+      members = result;
+    } else if (result && typeof result === 'object') {
+      // Sometimes MariaDB returns results with rows at index 0
+      members = result[0] || [];
+    } else {
+      members = [];
+    }
     
-    const enhanced = safeMembers.map(member => ({
+    console.log(`Found ${members.length} active members`);
+    
+    const enhanced = members.map(member => ({
       ...member,
       img: `/images/team/${member.id}.jpg`
     }));
