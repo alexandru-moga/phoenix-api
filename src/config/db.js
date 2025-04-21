@@ -58,11 +58,11 @@ const TABLE_SCHEMAS = {
   CREATE TABLE IF NOT EXISTS ysws_projects (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    start_date DATE NOT NULL,
+    start_date DATE DEFAULT NULL,
     end_date DATE DEFAULT NULL,
-    message TEXT NOT NULL,
-    website_url TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    apply_url VARCHAR(100) NOT NULL
+    description TEXT DEFAULT NULL,
+    website_url VARCHAR(100) DEFAULT NULL,
+    apply_url VARCHAR(100) DEFAULT NULL
   ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
 `
 };
