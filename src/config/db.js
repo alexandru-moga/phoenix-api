@@ -1,7 +1,7 @@
 const mariadb = require('mariadb');
 require('dotenv').config();
 
-// Table schemas stored as raw SQL
+// --- Table Schemas ---
 const TABLE_SCHEMAS = {
   members: `
     CREATE TABLE IF NOT EXISTS members (
@@ -21,10 +21,11 @@ const TABLE_SCHEMAS = {
       role VARCHAR(50) DEFAULT NULL,
       join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       description TEXT DEFAULT NULL,
+      login_code CHAR(6) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+      login_code_expires DATETIME DEFAULT NULL,
       active_member BOOLEAN DEFAULT FALSE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
   `,
-  
   applications: `
     CREATE TABLE IF NOT EXISTS applications (
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -41,7 +42,6 @@ const TABLE_SCHEMAS = {
       discord_username VARCHAR(255) DEFAULT NULL
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
   `,
-
   contact_submissions: `
     CREATE TABLE IF NOT EXISTS contact_submissions (
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -51,20 +51,20 @@ const TABLE_SCHEMAS = {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
   `,
-
   ysws_projects: `
-  CREATE TABLE IF NOT EXISTS ysws_projects (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    start_date DATE DEFAULT NULL,
-    end_date DATE DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    website_url VARCHAR(100) DEFAULT NULL,
-    apply_url VARCHAR(100) DEFAULT NULL
-  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
-`
+    CREATE TABLE IF NOT EXISTS ysws_projects (
+      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      start_date DATE DEFAULT NULL,
+      end_date DATE DEFAULT NULL,
+      description TEXT DEFAULT NULL,
+      website_url VARCHAR(100) DEFAULT NULL,
+      apply_url VARCHAR(100) DEFAULT NULL
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+  `
 };
 
+// --- Connection Pool ---
 const pool = mariadb.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -75,16 +75,89 @@ const pool = mariadb.createPool({
   idleTimeout: 5000,
   metaAsArray: false,
   namedPlaceholders: true,
-  supportBigNumbers: true,
-  typeCast: function(field, next) {
-    if (field && typeof field.name === 'string' && field.name.toLowerCase() === 'userid') {
-      const value = field.string();
-      return value ? parseInt(value, 10) : null;
-    }
-    return next();
-  }
+  supportBigNumbers: true
 });
 
+// --- Schema Management Helpers ---
+function parseSchema(sql) {
+  const columns = [];
+  const columnRegex = /`?(\w+)`?\s+((?:.(?!\b(?:CHARACTER SET|COLLATE|\)\s*ENGINE)))*)/gmi;
+  let columnDefinitions = sql.split('\n').filter(line =>
+    line.trim() &&
+    !line.includes('CREATE TABLE') &&
+    !line.includes('CHARACTER SET') &&
+    !line.includes(') ENGINE')
+  ).join('\n');
+  let match;
+  while ((match = columnRegex.exec(columnDefinitions)) !== null) {
+    const [, name, definition] = match;
+    const cleanDefinition = definition
+      .replace(/,\s*$/, '')
+      .replace(/\)\s*$/, '')
+      .trim();
+    if (name && cleanDefinition &&
+      !['PRIMARY', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN'].some(kw =>
+        cleanDefinition.toUpperCase().includes(kw))) {
+      columns.push({ name: name.trim(), definition: cleanDefinition });
+    }
+  }
+  return columns;
+}
+
+async function ensureColumnsExist(conn, tableName, columns) {
+  for (const column of columns) {
+    try {
+      const [rows] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+        [process.env.DB_NAME, tableName, column.name]
+      );
+      if (!rows || rows.length === 0) {
+        console.log(`Adding column ${tableName}.${column.name}...`);
+        await conn.query(
+          `ALTER TABLE ${tableName} ADD COLUMN ${column.name} ${column.definition}`
+        );
+      }
+    } catch (error) {
+      console.error(`Column verification failed for ${tableName}.${column.name}:`, error);
+      throw error;
+    }
+  }
+}
+
+async function createTables(conn) {
+  for (const [tableName, schema] of Object.entries(TABLE_SCHEMAS)) {
+    await conn.query(schema);
+    console.log(`${tableName} table validated`);
+  }
+}
+
+async function createIndexes(conn) {
+  const indexes = [
+    { table: 'members', name: 'idx_login_code', column: 'login_code' },
+    { table: 'members', name: 'idx_login_code_expires', column: 'login_code_expires' }
+  ];
+  for (const index of indexes) {
+    try {
+      const [rows] = await conn.query(
+        `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+        [process.env.DB_NAME, index.table, index.name]
+      );
+      if (!rows || rows.length === 0) {
+        await conn.query(
+          `CREATE INDEX ${index.name} ON ${index.table} (${index.column})`
+        );
+        console.log(`Created index ${index.name}`);
+      }
+    } catch (error) {
+      console.error(`Index operation failed for ${index.name}:`, error);
+      throw error;
+    }
+  }
+}
+
+// --- Main Database Initialization ---
 async function initDatabase() {
   let conn;
   try {
@@ -95,7 +168,7 @@ async function initDatabase() {
     // 1. Create tables with latest schema
     await createTables(conn);
 
-    // 2. Verify all columns exist
+    // 2. Ensure all columns exist
     for (const [tableName, schema] of Object.entries(TABLE_SCHEMAS)) {
       const columns = parseSchema(schema);
       await ensureColumnsExist(conn, tableName, columns);
@@ -103,7 +176,7 @@ async function initDatabase() {
 
     // 3. Create indexes
     await createIndexes(conn);
-    
+
     await conn.commit();
     console.log('Database schema validated successfully');
   } catch (err) {
@@ -112,109 +185,6 @@ async function initDatabase() {
     throw err;
   } finally {
     if (conn) conn.release();
-  }
-}
-
-function parseSchema(sql) {
-    const columns = [];
-    const columnRegex = /`?(\w+)`?\s+((?:.(?!\b(?:CHARACTER SET|COLLATE|\)\s*ENGINE)))*)/gmi;
-    
-    let columnDefinitions = sql.split('\n').filter(line => 
-      line.trim() && 
-      !line.includes('CREATE TABLE') && 
-      !line.includes('CHARACTER SET') && 
-      !line.includes(') ENGINE')
-    ).join('\n');
-  
-    let match;
-    while ((match = columnRegex.exec(columnDefinitions)) !== null) {
-      const [, name, definition] = match;
-      const cleanDefinition = definition
-        .replace(/,\s*$/, '')
-        .replace(/\)\s*$/, '')
-        .trim();
-        
-      if (name && cleanDefinition && 
-          !['PRIMARY', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN'].some(kw => 
-            cleanDefinition.toUpperCase().includes(kw))) {
-        columns.push({
-          name: name.trim(),
-          definition: cleanDefinition
-        });
-      }
-    }
-    return columns;
-  }
-
-async function ensureColumnsExist(conn, tableName, columns) {
-    for (const column of columns) {
-      try {
-        const [rows] = await conn.query(
-          `SELECT COLUMN_NAME 
-           FROM INFORMATION_SCHEMA.COLUMNS 
-           WHERE TABLE_SCHEMA = ? 
-             AND TABLE_NAME = ? 
-             AND COLUMN_NAME = ?`,
-          [process.env.DB_NAME, tableName, column.name]
-        );
-  
-        // Add null/undefined check here
-        if (!rows || rows.length === 0) {
-          console.log(`Adding column ${tableName}.${column.name}...`);
-          await conn.query(
-            `ALTER TABLE ${tableName} 
-             ADD COLUMN ${column.name} ${column.definition}`
-          );
-        }
-      } catch (error) {
-        console.error(`Column verification failed for ${tableName}.${column.name}:`, error);
-        throw error;
-      }
-    }
-  }
-  
-async function createTables(conn) {
-  await conn.query(TABLE_SCHEMAS.members);
-  console.log('Members table validated');
-  
-  await conn.query(TABLE_SCHEMAS.applications);
-  console.log('Applications table validated');
-  
-  await conn.query(TABLE_SCHEMAS.contact_submissions);
-  console.log('Contact submissions table validated');
-
-  await conn.query(TABLE_SCHEMAS.ysws_projects);
-  console.log('You Ship We Ship projects table validated');
-}
-
-async function createIndexes(conn) {
-  const indexes = [
-    { table: 'members', name: 'idx_login_code', column: 'login_code' },
-    { table: 'members', name: 'idx_login_code_expires', column: 'login_code_expires' }
-  ];
-
-  for (const index of indexes) {
-    try {
-      const [rows] = await conn.query(
-        `SELECT INDEX_NAME 
-         FROM INFORMATION_SCHEMA.STATISTICS 
-         WHERE TABLE_SCHEMA = ? 
-           AND TABLE_NAME = ? 
-           AND INDEX_NAME = ?`,
-        [process.env.DB_NAME, index.table, index.name]
-      );
-
-      if (rows.length === 0) {
-        await conn.query(
-          `CREATE INDEX ${index.name} 
-           ON ${index.table} (${index.column})`
-        );
-        console.log(`Created index ${index.name}`);
-      }
-    } catch (error) {
-      console.error(`Index operation failed for ${index.name}:`, error);
-      throw error;
-    }
   }
 }
 
