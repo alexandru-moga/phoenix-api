@@ -58,6 +58,8 @@ app.get('/api/team-members', async (req, res) => {
   try {
     const { pool } = require('./config/db');
     const conn = await pool.getConnection();
+    
+    // Execute query and ensure array result
     const [members] = await conn.query(`
       SELECT id, first_name, last_name, role 
       FROM members 
@@ -70,9 +72,13 @@ app.get('/api/team-members', async (req, res) => {
         END,
         last_name ASC
     `);
+    
     conn.release();
 
-    const enhanced = members.map(member => ({
+    // Force members to be an array
+    const safeMembers = Array.isArray(members) ? members : [];
+    
+    const enhanced = safeMembers.map(member => ({
       ...member,
       img: `https://phoenixclub.ro/images/team/${member.last_name.toLowerCase()}-${member.first_name.toLowerCase()}.jpg`
     }));
