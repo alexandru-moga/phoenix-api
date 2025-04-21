@@ -52,7 +52,19 @@ const TABLE_SCHEMAS = {
       message TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
-  `
+  `,
+
+  ysws_projects: `
+  CREATE TABLE IF NOT EXISTS ysws_projects (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    start_date VARCHAR(255) DATE NOT NULL,
+    start_date VARCHAR(255) DATE NOT NULL,
+    message TEXT NOT NULL,
+    website_url TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    apply_url VARCHAR(100) NOT NULL
+  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+`
 };
 
 const pool = mariadb.createPool({
@@ -172,6 +184,9 @@ async function createTables(conn) {
   
   await conn.query(TABLE_SCHEMAS.contact_submissions);
   console.log('Contact submissions table validated');
+
+  await conn.query(TABLE_SCHEMAS.ysws_projects);
+  console.log('You Ship We Ship projects table validated');
 }
 
 async function createIndexes(conn) {
