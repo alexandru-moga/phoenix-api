@@ -34,10 +34,13 @@ initDatabase().catch((err) => {
 const contactRoutes = require('./routes/contactRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const authRoutes = require('./routes/authRoutes');
+const protectedRoutes = require('./routes/protectedRoutes');
+
 
 app.use('/api/contact', contactRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/protected', protectedRoutes);
 
 // --- Example API Endpoints ---
 app.get('/api/projects', async (req, res) => {
