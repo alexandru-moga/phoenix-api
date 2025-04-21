@@ -12,7 +12,6 @@ function generateLoginCode(email) {
   }
 
 async function sendLoginCode(email, code) {
-    const code = generateLoginCode(email);
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
