@@ -21,8 +21,6 @@ const TABLE_SCHEMAS = {
       role VARCHAR(50) DEFAULT NULL,
       join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       description TEXT DEFAULT NULL,
-      login_code CHAR(6) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
-      login_code_expires DATETIME DEFAULT NULL,
       active_member BOOLEAN DEFAULT FALSE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
   `,
@@ -132,30 +130,6 @@ async function createTables(conn) {
   }
 }
 
-async function createIndexes(conn) {
-  const indexes = [
-    { table: 'members', name: 'idx_login_code', column: 'login_code' },
-    { table: 'members', name: 'idx_login_code_expires', column: 'login_code_expires' }
-  ];
-  for (const index of indexes) {
-    try {
-      const [rows] = await conn.query(
-        `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?`,
-        [process.env.DB_NAME, index.table, index.name]
-      );
-      if (!rows || rows.length === 0) {
-        await conn.query(
-          `CREATE INDEX ${index.name} ON ${index.table} (${index.column})`
-        );
-        console.log(`Created index ${index.name}`);
-      }
-    } catch (error) {
-      console.error(`Index operation failed for ${index.name}:`, error);
-      throw error;
-    }
-  }
-}
 
 // --- Main Database Initialization ---
 async function initDatabase() {
@@ -175,8 +149,6 @@ async function initDatabase() {
     }
 
     // 3. Create indexes
-    await createIndexes(conn);
-
     await conn.commit();
     console.log('Database schema validated successfully');
   } catch (err) {
