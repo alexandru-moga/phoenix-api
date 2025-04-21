@@ -21,8 +21,6 @@ const TABLE_SCHEMAS = {
       role VARCHAR(50) DEFAULT NULL,
       join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       description TEXT DEFAULT NULL,
-      login_code CHAR(6) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
-      login_code_expires DATETIME DEFAULT NULL,
       active_member BOOLEAN DEFAULT FALSE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
   `,

@@ -1,6 +1,18 @@
+
+const speakeasy = require('speakeasy');
 const nodemailer = require('nodemailer');
 
+function generateLoginCode(email) {
+    return speakeasy.totp({
+      secret: process.env.LOGIN_CODE_SECRET + email,
+      encoding: 'ascii',
+      step: 300,
+      digits: 6
+    });
+  }
+
 async function sendLoginCode(email, code) {
+    const code = generateLoginCode(email);
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
