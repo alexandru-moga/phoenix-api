@@ -3,6 +3,7 @@ const router = express.Router();
 const speakeasy = require('speakeasy');
 const jwt = require('jsonwebtoken');
 const { sendLoginCode } = require('../utils/mailer');
+const authenticateJWT = require('../utils/auth');
 
 // Helper: Validate email format
 function validateEmail(email) {
@@ -29,6 +30,11 @@ function verifyLoginCode(email, code) {
     window: 1, // allow ±5min for clock skew
   });
 }
+
+router.get('/me', authenticateJWT, (req, res) => {
+    // req.user is set by the JWT middleware
+    res.json({ email: req.user.userId });
+  });
 
 // POST /api/auth/initiate-login
 router.post('/initiate-login', async (req, res) => {
