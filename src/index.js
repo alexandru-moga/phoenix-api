@@ -58,11 +58,10 @@ app.get('/api/team-members', async (req, res) => {
   try {
     const { pool } = require('./config/db');
     const conn = await pool.getConnection();
-    
     console.log('Fetching team members with active_member = 1...');
     
     // Execute query
-    const [members] = await conn.query(`
+    const result = await conn.query(`
       SELECT id, first_name, last_name, role
       FROM members
       WHERE active_member = 1
@@ -74,12 +73,14 @@ app.get('/api/team-members', async (req, res) => {
         END,
         last_name ASC
     `);
-    
     conn.release();
+    
+    // Correctly access the rows - handle both array and object formats
+    const members = Array.isArray(result) ? result : result[0];
     
     console.log(`Found ${members ? members.length : 0} active members`);
     
-    // Force members to be an array
+    // Ensure members is always an array
     const safeMembers = Array.isArray(members) ? members : [];
     
     const enhanced = safeMembers.map(member => ({
@@ -93,7 +94,6 @@ app.get('/api/team-members', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch team members' });
   }
 });
-
 
 https.createServer(httpsOptions, app).listen(3000, () => {
   console.log('API running on https://api.phoenixclub.ro');
