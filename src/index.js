@@ -85,7 +85,7 @@ app.get('/api/team-members', async (req, res) => {
     
     const enhanced = safeMembers.map(member => ({
       ...member,
-      img: `https://phoenixclub.ro/images/team/${member.last_name.toLowerCase()}-${member.first_name.toLowerCase()}.jpg`
+      img: `https://phoenixclub.ro/images/team/${member.id}.jpg`
     }));
     
     res.json(enhanced);
