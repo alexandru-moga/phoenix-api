@@ -102,3 +102,32 @@ async function createIndexes(conn) {
       }
   }
 }
+
+app.get('/api/team-members', async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    const [members] = await conn.query(`
+      SELECT id, first_name, last_name, role 
+      FROM members 
+      WHERE active_member = 1
+      ORDER BY 
+        CASE role
+          WHEN 'leader' THEN 1
+          WHEN 'co-leader' THEN 2
+          ELSE 3
+        END,
+        last_name ASC
+    `);
+    conn.release();
+    
+    const enhanced = members.map(member => ({
+      ...member,
+      img: `/images/team/${member.last_name.toLowerCase()}-${member.first_name.toLowerCase()}.jpg`
+    }));
+
+    res.json(enhanced);
+  } catch (error) {
+    console.error('Team members error:', error);
+    res.status(500).json({ error: 'Failed to fetch team members' });
+  }
+});
