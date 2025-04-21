@@ -88,7 +88,7 @@ app.get('/api/team-members', async (req, res) => {
     console.error('Team members error:', error);
     res.status(500).json({ error: 'Failed to fetch team members' });
   }
-});
+}); 
 
 https.createServer(httpsOptions, app).listen(3000, () => {
   console.log('API running on https://api.phoenixclub.ro');
