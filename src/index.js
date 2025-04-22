@@ -3,6 +3,8 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 const app = express();
 
