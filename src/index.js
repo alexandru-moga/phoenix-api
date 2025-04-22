@@ -39,7 +39,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 // --- Protected Example Endpoints ---
 const authenticateJWT = require('./utils/auth');
 
-app.get('/api/projects', authenticateJWT, async (req, res) => {
+app.get('/api/projects', async (req, res) => {
   try {
     const { pool } = require('./config/db');
     const conn = await pool.getConnection();
