@@ -2,14 +2,18 @@ const https = require('https');
 const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+require('dotenv').config();
 
 const app = express();
 
+// --- Middleware ---
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // --- CORS Configuration ---
-const corsOptions = {
+app.use(cors({
   origin: [
     'http://127.0.0.1:5500',
     'https://phoenixclub.ro',
@@ -18,12 +22,7 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-};
-app.use(cors(corsOptions));
-
-// --- Body Parsers ---
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+}));
 
 // --- Database Initialization ---
 const { initDatabase } = require('./config/db');
@@ -33,19 +32,14 @@ initDatabase().catch((err) => {
 });
 
 // --- Routes ---
-const contactRoutes = require('./routes/contactRoutes');
-const applicationRoutes = require('./routes/applicationRoutes');
-const authRoutes = require('./routes/authRoutes');
-const protectedRoutes = require('./routes/protectedRoutes');
+app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
 
+// --- Protected Example Endpoints ---
+const authenticateJWT = require('./utils/auth');
 
-app.use('/api/contact', contactRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/protected', protectedRoutes);
-
-// --- Example API Endpoints ---
-app.get('/api/projects', async (req, res) => {
+app.get('/api/projects', authenticateJWT, async (req, res) => {
   try {
     const { pool } = require('./config/db');
     const conn = await pool.getConnection();
@@ -87,15 +81,7 @@ app.get('/api/team-members', async (req, res) => {
     `);
     conn.release();
 
-    let members;
-    if (Array.isArray(result)) {
-      members = result;
-    } else if (result && typeof result === 'object') {
-      members = result[0] || [];
-    } else {
-      members = [];
-    }
-
+    const members = Array.isArray(result) ? result : (result && typeof result === 'object' ? result[0] || [] : []);
     const enhanced = members.map(member => ({
       ...member,
       img: `/images/team/${member.id}.jpg`
